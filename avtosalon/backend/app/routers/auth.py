@@ -6,7 +6,7 @@ from app.auth.dependencies import get_current_user
 from app.auth.security import create_access_token, hash_password, verify_password
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.schemas.user import CustomerRegister, LoginRequest, Token, UserOut
+from app.schemas.user import ChangePasswordRequest, CustomerRegister, LoginRequest, Token, UserOut
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -60,3 +60,22 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserOut)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/change-password", status_code=status.HTTP_200_OK)
+def change_password(
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Change password for the current authenticated user."""
+    # Verify old password
+    if not verify_password(payload.old_password, current_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Old password is incorrect")
+    
+    # Update to new password
+    current_user.password_hash = hash_password(payload.new_password)
+    db.add(current_user)
+    db.commit()
+    
+    return {"detail": "Password changed successfully"}

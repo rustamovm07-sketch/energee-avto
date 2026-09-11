@@ -38,8 +38,13 @@ def get_current_user(
     user_id = payload.get("sub")
     if user_id is None:
         raise credentials_error
-
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    # A token whose subject is not a numeric id is simply invalid - treat it
+    # as an auth failure (401) instead of letting int() raise a 500.
+    try:
+        user_id_int = int(user_id)
+    except (TypeError, ValueError):
+        raise credentials_error
+    user = db.query(User).filter(User.id == user_id_int).first()
     if user is None:
         raise credentials_error
 

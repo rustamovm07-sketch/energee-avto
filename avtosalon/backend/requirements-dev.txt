@@ -1,0 +1,8 @@
+# Development / testing dependencies.
+# Install with:  pip install -r requirements.txt -r requirements-dev.txt
+#
+# httpx is required by Starlette's TestClient, which the API-level tests use.
+-r requirements.txt
+pytest==8.3.3
+pytest-cov==6.0.0
+httpx==0.28.1

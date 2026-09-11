@@ -70,3 +70,21 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+    new_password_confirm: str
+
+    @field_validator("new_password_confirm")
+    @classmethod
+    def passwords_match(cls, v, info):
+        if "new_password" in info.data and v != info.data["new_password"]:
+            raise ValueError("Passwords do not match")
+        return v
+
+    @field_validator("new_password")
+    @classmethod
+    def password_min_length(cls, v):
+        if len(v) < 6:
+            raise ValueError("Password must be at least 6 characters")
+        return v

@@ -239,18 +239,50 @@ DASHBOARD
 - Secure HTTP status codes
 
 ## Testing
+Testlar **pytest** asosida yozilgan va **in-memory SQLite** da ishlaydi —
+real PostgreSQL talab qilinmaydi va testlar bir-biriga ta'sir qilmaydi.
 
+### O'rnatish
 ```bash
-# Tests ishga tushirish
-pytest
-
-# Coverage bilan
-pytest --cov=app
+cd backend
+python -m venv venv
+source venv/bin/activate            # Windows: venv\Scripts\activate
+pip install -r requirements.txt -r requirements-dev.txt
 ```
 
-**Test Coverage Areas:**
-- Authentication: Login, Register, JWT validation
-- Authorization: Role-based access control
-- Business Logic: Car CRUD, Sales, Applications
-- Edge Cases: Duplicate email/phone/VIN, SOLD cars, etc.
-- Security: Unauthorized access attempts
+> Testlar `conftest.py` ichida `DATABASE_URL` va `SECRET_KEY` ni o'zi
+o'rnatadi, shuning uchun alohida `.env` fayl shart emas.
+
+### Ishga tushirish
+```bash
+pytest                                  # barcha testlar
+pytest -v                               # har bir test nomi bilan
+pytest tests/test_auth.py               # bitta fayl
+pytest -k "sold_car"                    # nom bo'yicha filtrlash
+pytest --cov=app --cov-report=term-missing   # coverage bilan
+```
+
+### Test to'plami (202 ta test)
+
+| Fayl | Soha | Nima tekshiriladi |
+| --- | --- | --- |
+| `test_auth.py` | Autentifikatsiya | register, login (email/telefon), JWT, parol o'zgartirish |
+| `test_security.py` | RBAC & izolyatsiya | rol matritsasi, worker/customer izolyatsiyasi, nofaol worker, buzuq/muddati o'tgan JWT |
+| `test_cars.py` | Cars | CRUD, filter/qidiruv, dublikat VIN, SOLD avtomobil qoidalari |
+| `test_sales.py` | Sales | tranzaksiya, SOLD qayta sotilmasligi, payment yaratilishi |
+| `test_favorites.py` | Favorites | dublikat yo'qligi, faqat customer uchun |
+| `test_applications.py` | Applications | SOLD uchun ariza bloklanishi, status va tayinlash |
+| `test_workers.py` | Workers | director CRUD, faollashtirish/faolsizlantirish |
+| `test_customers_payments.py` | Customers/Payments | profil tahriri, dublikat email/telefon, to'lovlar |
+| `test_dashboard.py` | Dashboard | real DB dan hisoblangan statistika |
+| `test_app_wiring.py` | Infratuzilma | health, route ro'yxati, `get_db` dependency |
+
+### Qamrov (coverage)
+
+Joriy qamrov: **99%** (`app/` bo'yicha, 758 satrdan 5 tasi qamrab olinmagan).
+
+**Test turlari:**
+- **Positive** — to'g'ri oqim (masalan, muvaffaqiyatli sotuv yaratish)
+- **Negative** — xato holatlar (dublikat, ruxsatsiz kirish, noto'g'ri parol)
+- **Edge case** — chegaraviy holatlar (SOLD avtomobil, muddati o'tgan JWT,
+  bo'sh ro'yxatlar, 10 dan ortiq `recent_sales` cheklovi)
